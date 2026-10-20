@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import asyncio
 from src.models.domain import VehicleListing, DealScoreResult, NHTSARecall
 from src.activities.gov_apis import GovAPIClient
-from src.activities.scoring import DealScorer
+from src.activities.scoring import DealScorer, BayAreaGeoLookup
 
 
 class TestCarResearcherDomain(unittest.TestCase):
@@ -133,6 +133,53 @@ class TestCarResearcherDomain(unittest.TestCase):
                 self.assertEqual(data.get("Model Year"), "2023")
 
         asyncio.run(run_test())
+
+    def test_trim_aware_msrp_lookup(self):
+        # Differentiate trims within the same model line
+        msrp_eqs_base = DealScorer.get_estimated_original_msrp("Mercedes-Benz", "EQS 450+", trim_detail="Base")
+        msrp_eqs_580 = DealScorer.get_estimated_original_msrp("Mercedes-Benz", "EQS 580", trim_detail="4MATIC")
+        msrp_eqs_amg = DealScorer.get_estimated_original_msrp("Mercedes-Benz", "AMG EQS", trim_detail="4MATIC+")
+        self.assertEqual(msrp_eqs_base, 105000)
+        self.assertEqual(msrp_eqs_580, 126000)
+        self.assertEqual(msrp_eqs_amg, 147500)
+
+        msrp_i4_35 = DealScorer.get_estimated_original_msrp("BMW", "i4", trim_detail="eDrive35")
+        msrp_i4_m50 = DealScorer.get_estimated_original_msrp("BMW", "i4", trim_detail="M50")
+        self.assertLess(msrp_i4_35, msrp_i4_m50)
+
+    def test_non_saturating_score_differentiation(self):
+        # A car 25% below FMV must score strictly higher than a car 12% below FMV
+        base_kwargs = dict(
+            vin="W1KCG2EB6NA123456",
+            platform="carscom",
+            platform_id="cc-1",
+            url="https://example.com/1",
+            title="2023 Mercedes-Benz EQS 450+",
+            mileage=25000,
+            make="Mercedes-Benz",
+            model="EQS",
+            year=2023,
+            distance_miles=20.0,
+        )
+        car_12pct_below = VehicleListing(price=44000, **base_kwargs)
+        car_25pct_below = VehicleListing(price=37500, **base_kwargs)
+
+        score_12 = DealScorer.score_listing(car_12pct_below, market_value=50000)
+        score_25 = DealScorer.score_listing(car_25pct_below, market_value=50000)
+        self.assertGreater(score_25.deal_score, score_12.deal_score)
+
+    def test_bay_area_zip_distance_resolver(self):
+        dist_sf, city_sf = BayAreaGeoLookup.resolve_zip("94103")
+        self.assertEqual(city_sf, "San Francisco")
+        self.assertLessEqual(dist_sf, 5.0)
+
+        dist_wc, city_wc = BayAreaGeoLookup.resolve_zip("94596")
+        self.assertEqual(city_wc, "Walnut Creek")
+        self.assertLessEqual(dist_wc, 30.0)
+
+        dist_la, city_la = BayAreaGeoLookup.resolve_zip("90210")
+        self.assertEqual(city_la, "Out of Region")
+        self.assertGreater(dist_la, 100.0)
 
 
 if __name__ == "__main__":

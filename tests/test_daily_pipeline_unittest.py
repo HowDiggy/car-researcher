@@ -107,6 +107,62 @@ class TestDailyPipeline(unittest.TestCase):
 
         asyncio.run(run_pipeline())
 
+    def test_batch_scoring_with_peer_medians(self):
+        from src.activities.scoring import score_listings_batch_activity
+
+        batch = [
+            {
+                "vin": "W1KCG2EB6NA100001",
+                "platform": "carscom",
+                "platform_id": "cc-1",
+                "url": "https://cars.com/1",
+                "title": "2023 Mercedes-Benz EQS 450+",
+                "price": 38000,
+                "mileage": 25000,
+                "make": "Mercedes-Benz",
+                "model": "EQS 450+",
+                "year": 2023,
+                "distance_miles": 15.0,
+                "raw_data": {"extra_bloat": "x" * 1000, "days_on_market": 45},
+            },
+            {
+                "vin": "W1KCG2EB6NA100002",
+                "platform": "carscom",
+                "platform_id": "cc-2",
+                "url": "https://cars.com/2",
+                "title": "2023 Mercedes-Benz EQS 450+",
+                "price": 44000,
+                "mileage": 26000,
+                "make": "Mercedes-Benz",
+                "model": "EQS 450+",
+                "year": 2023,
+                "distance_miles": 15.0,
+                "raw_data": {"days_on_market": 45},
+            },
+            {
+                "vin": "W1KCG2EB6NA100003",
+                "platform": "carscom",
+                "platform_id": "cc-3",
+                "url": "https://cars.com/3",
+                "title": "2023 Mercedes-Benz EQS 450+",
+                "price": 47000,
+                "mileage": 24000,
+                "make": "Mercedes-Benz",
+                "model": "EQS 450+",
+                "year": 2023,
+                "distance_miles": 15.0,
+                "raw_data": {"days_on_market": 45},
+            },
+        ]
+
+        scored = asyncio.run(score_listings_batch_activity(batch))
+        self.assertEqual(len(scored), 3)
+        # Cheapest car ($38k) should score higher than the $44k and $47k cars
+        self.assertGreater(scored[0]["score_data"]["deal_score"], scored[1]["score_data"]["deal_score"])
+        self.assertGreater(scored[1]["score_data"]["deal_score"], scored[2]["score_data"]["deal_score"])
+        # Compact payload check: extra_bloat should be pruned from raw_data
+        self.assertNotIn("extra_bloat", scored[0]["listing"]["raw_data"])
+
 
 if __name__ == "__main__":
     unittest.main()

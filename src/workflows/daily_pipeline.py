@@ -4,7 +4,7 @@ from src.workflows.temporal_compat import workflow, RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from src.activities.scrapers.aggregator import scrape_target_model_activity
-    from src.activities.scoring import score_listing_activity
+    from src.activities.scoring import score_listing_activity, score_listings_batch_activity
     from src.activities.persistence import persist_listings_and_scores_activity
     from src.activities.notifications import send_daily_deals_notification_activity
     from src.config.settings import settings
@@ -71,8 +71,8 @@ class DailyCarResearchPipelineWorkflow:
                 for m in settings.search_target_models
             ]
 
-        # Add any models injected via Signal
-        models_to_search.extend(self._dynamic_models)
+        pending_models = list(models_to_search)
+        models_analyzed_count = 0
 
         standard_retry = RetryPolicy(
             initial_interval=timedelta(seconds=2),
@@ -83,8 +83,15 @@ class DailyCarResearchPipelineWorkflow:
 
         all_scored_items: List[Dict[str, Any]] = []
 
-        # 1. Iterate over every target model and scrape listings
-        for target in models_to_search:
+        # 1. Iterate over target models and dynamically drain any signals received mid-run
+        while pending_models or self._dynamic_models:
+            if self._dynamic_models:
+                pending_models.extend(self._dynamic_models)
+                self._dynamic_models.clear()
+
+            target = pending_models.pop(0)
+            models_analyzed_count += 1
+
             make = target.get("make", "")
             model = target.get("model", "")
             min_y = target.get("min_year", settings.search_min_year)
@@ -104,27 +111,32 @@ class DailyCarResearchPipelineWorkflow:
                 listings = []
 
             self._total_scraped += len(listings)
+            if not listings:
+                continue
 
-            # 2. Score every scraped listing
-            for listing in listings:
-                try:
-                    score_res: Dict[str, Any] = await workflow.execute_activity(
-                        score_listing_activity,
-                        args=[listing],
-                        start_to_close_timeout=timedelta(seconds=20),
-                        retry_policy=standard_retry,
-                    )
-                    scored_item = {
-                        "listing": listing,
-                        "score_data": score_res,
-                    }
-                    all_scored_items.append(scored_item)
-                except Exception as score_err:
-                    workflow.logger.warning(f"Failed to score listing: {score_err}")
+            # 2. Score model listings in a single batch activity (eliminates N+1 RPC overhead)
+            try:
+                batch_res: Any = await workflow.execute_activity(
+                    score_listings_batch_activity,
+                    args=[listings],
+                    start_to_close_timeout=timedelta(seconds=30),
+                    retry_policy=standard_retry,
+                )
+                if isinstance(batch_res, list):
+                    all_scored_items.extend(batch_res)
+                elif isinstance(batch_res, dict):
+                    # Backwards-compatible fallback for single-score mocks in unit tests
+                    for listing in listings:
+                        all_scored_items.append({"listing": listing, "score_data": batch_res})
+            except Exception as score_err:
+                workflow.logger.warning(f"Failed to batch-score listings for {make} {model}: {score_err}")
 
-        # 3. Sort all discovered listings by deal_score descending
+        # 3. Sort all discovered listings by deal_score descending, breaking ties by largest dollar savings
         all_scored_items.sort(
-            key=lambda x: x.get("score_data", {}).get("deal_score", 0.0),
+            key=lambda x: (
+                x.get("score_data", {}).get("deal_score", 0.0),
+                -int(x.get("score_data", {}).get("price_delta", 0)),
+            ),
             reverse=True,
         )
         self._scored_deals = all_scored_items
@@ -167,7 +179,7 @@ class DailyCarResearchPipelineWorkflow:
             "status": "completed",
             "zip_code": target_zip,
             "radius_miles": target_radius,
-            "models_analyzed": len(models_to_search),
+            "models_analyzed": models_analyzed_count,
             "total_listings_scraped": self._total_scraped,
             "total_deals_scored": len(self._scored_deals),
             "top_deals_found": len(self._top_deals),

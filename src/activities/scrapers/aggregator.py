@@ -63,40 +63,112 @@ class MarketplaceAggregator:
             elif isinstance(res, Exception):
                 logger.error(f"Scraper task encountered error: {res}")
 
-        return self.deduplicate_listings(raw_listings, radius_miles=radius_miles)
+        return self.deduplicate_listings(
+            raw_listings,
+            radius_miles=radius_miles,
+            min_price=min_price,
+            max_price=max_price,
+            min_year=min_year,
+            max_year=max_year,
+            target_make=make,
+            target_model=model,
+        )
 
     @staticmethod
+    def _merge_listing_metadata(primary: VehicleListing, secondary: VehicleListing) -> VehicleListing:
+        """Merge missing metadata from a duplicate listing into the winning (lowest-price) listing."""
+        for attr in (
+            "exterior_color",
+            "interior_color",
+            "trim_detail",
+            "seller_type",
+            "seller_name",
+            "seller_rating",
+            "location_city",
+            "location_state",
+            "distance_miles",
+            "owner_count",
+        ):
+            if getattr(primary, attr, None) is None and getattr(secondary, attr, None) is not None:
+                setattr(primary, attr, getattr(secondary, attr))
+
+        if not primary.photos and secondary.photos:
+            primary.photos = list(secondary.photos)
+
+        # Conservative safety: retain higher reported accident count or non-clean title
+        if secondary.accident_count > primary.accident_count:
+            primary.accident_count = secondary.accident_count
+        if primary.title_status.lower() == "clean" and secondary.title_status.lower() != "clean":
+            primary.title_status = secondary.title_status
+
+        return primary
+
+    @classmethod
     def deduplicate_listings(
+        cls,
         listings: List[VehicleListing],
         radius_miles: Optional[int] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        min_year: Optional[int] = None,
+        max_year: Optional[int] = None,
+        target_make: Optional[str] = None,
+        target_model: Optional[str] = None,
     ) -> List[VehicleListing]:
         """
-        Deduplicate listings across platforms.
-        - Primary key: 17-digit VIN
-        - Secondary key: normalized (make, model, year, mileage, price)
+        Deduplicate and validate listings across platforms.
+        - Primary key: 17-digit VIN (retains lowest price and merges metadata)
+        - Secondary key: normalized (make, model, year, mileage_bucket, price)
+        - Post-scrape guardrails: enforces radius, price, year, and make/model match
         """
         vin_map: Dict[str, VehicleListing] = {}
         fingerprint_map: Dict[str, VehicleListing] = {}
 
         for l in listings:
-            # Filter by radius if distance is populated
+            # 1. Geospatial Constraint: Drop if distance exceeds radius
             if radius_miles and l.distance_miles is not None:
                 if l.distance_miles > float(radius_miles):
                     continue
 
-            # Deduplication by VIN
+            # 2. Price & Year Post-Scrape Guardrails (protects against sponsored/reset cards)
+            if min_price and l.price < int(min_price * 0.75):
+                continue
+            if max_price and l.price > max_price:
+                continue
+            if min_year and l.year < min_year:
+                continue
+            if max_year and l.year > max_year:
+                continue
+
+            # 3. Target Make/Model Verification (protects against unrelated sponsored listings)
+            if target_make and l.make:
+                norm_target_make = target_make.lower().replace("-", " ").strip()
+                norm_listing_make = l.make.lower().replace("-", " ").strip()
+                if norm_target_make not in norm_listing_make and norm_listing_make not in norm_target_make:
+                    continue
+
+            if target_model and (l.model or l.title):
+                norm_target_model = target_model.lower().replace("-", " ").strip()
+                haystack = f"{l.model} {l.trim_detail or ''} {l.title}".lower().replace("-", " ")
+                # Verify primary model token appears in the listing model/title
+                primary_token = norm_target_model.split()[0]
+                if primary_token not in haystack:
+                    continue
+
+            # 4. Deduplication by 17-digit VIN
             if l.vin and len(l.vin) == 17:
                 vin_upper = l.vin.upper()
                 if vin_upper in vin_map:
                     existing = vin_map[vin_upper]
-                    # Keep the listing with lower price or more detailed info
                     if l.price < existing.price:
-                        vin_map[vin_upper] = l
+                        vin_map[vin_upper] = cls._merge_listing_metadata(l, existing)
+                    else:
+                        vin_map[vin_upper] = cls._merge_listing_metadata(existing, l)
                 else:
                     vin_map[vin_upper] = l
                 continue
 
-            # Secondary fallback: fingerprint hash
+            # 5. Secondary fallback: fingerprint hash
             clean_make = l.make.lower().strip()
             clean_model = l.model.lower().strip()
             mileage_bucket = l.mileage // 500

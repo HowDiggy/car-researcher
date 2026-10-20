@@ -82,7 +82,7 @@ async def start_temporal_worker() -> None:
         decode_vin_activity,
     )
     from src.activities.scrapers.aggregator import scrape_target_model_activity
-    from src.activities.scoring import score_listing_activity
+    from src.activities.scoring import score_listing_activity, score_listings_batch_activity
     from src.activities.persistence import persist_listings_and_scores_activity
     from src.activities.notifications import send_daily_deals_notification_activity
 
@@ -108,6 +108,7 @@ async def start_temporal_worker() -> None:
             decode_vin_activity,
             scrape_target_model_activity,
             score_listing_activity,
+            score_listings_batch_activity,
             persist_listings_and_scores_activity,
             send_daily_deals_notification_activity,
         ],

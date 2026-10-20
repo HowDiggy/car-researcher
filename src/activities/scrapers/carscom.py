@@ -212,6 +212,13 @@ class CarsComScraper(BaseListingScraper):
 
         seller = item.get("seller") or {}
         seller_name = seller.get("dealerName") if isinstance(seller, dict) else None
+        seller_zip = seller.get("zip") if isinstance(seller, dict) else None
+
+        from src.activities.scoring import BayAreaGeoLookup
+        est_distance, est_city = BayAreaGeoLookup.resolve_zip(seller_zip)
+
+        thumb = item.get("primaryThumbnail")
+        photos = [thumb] if thumb else []
 
         return VehicleListing(
             vin=item.get("vin"),
@@ -227,6 +234,9 @@ class CarsComScraper(BaseListingScraper):
             trim_detail=trim,
             exterior_color=item.get("exteriorColor"),
             seller_name=seller_name,
+            location_city=est_city,
+            distance_miles=est_distance,
+            photos=photos,
             raw_data=item,
         )
 

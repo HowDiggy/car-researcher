@@ -182,6 +182,70 @@ class TestScrapers(unittest.TestCase):
         self.assertEqual(winner.vin, "W1KCG2EB6NA123456")
         self.assertEqual(winner.price, 46500) # Picked lower price
 
+    def test_aggregator_post_scrape_guardrails_and_metadata_merge(self):
+        # Listing 1 has rich metadata (color, photos) but higher price
+        l_rich = VehicleListing(
+            vin="W1KCG2EB6NA123456",
+            platform="carscom",
+            platform_id="cc-1",
+            url="https://cars.com/1",
+            title="2023 Mercedes-Benz EQS 450+",
+            price=47000,
+            mileage=22000,
+            make="Mercedes-Benz",
+            model="EQS 450+",
+            year=2023,
+            exterior_color="Obsidian Black",
+            seller_name="Walnut Creek MB",
+            photos=["https://img.cars.com/1.jpg"],
+            distance_miles=23.0,
+        )
+        # Listing 2 has lower price ($45,500) but missing color/photos
+        l_cheap = VehicleListing(
+            vin="W1KCG2EB6NA123456",
+            platform="cargurus",
+            platform_id="cg-1",
+            url="https://cargurus.com/1",
+            title="2023 Mercedes-Benz EQS 450+",
+            price=45500,
+            mileage=22000,
+            make="Mercedes-Benz",
+            model="EQS 450+",
+            year=2023,
+            distance_miles=23.0,
+        )
+        # Listing 3 is an out-of-budget sponsored card ($77,707 > $60,000 max_price)
+        l_sponsored_expensive = VehicleListing(
+            vin="W1KCG2EB6NA999999",
+            platform="carscom",
+            platform_id="cc-sponsored",
+            url="https://cars.com/sponsored",
+            title="2026 Mercedes-Benz EQS 580",
+            price=77707,
+            mileage=500,
+            make="Mercedes-Benz",
+            model="EQS 580",
+            year=2026,
+            distance_miles=15.0,
+        )
+
+        deduped = MarketplaceAggregator.deduplicate_listings(
+            [l_rich, l_cheap, l_sponsored_expensive],
+            radius_miles=60,
+            min_price=20000,
+            max_price=60000,
+            min_year=2022,
+            max_year=2026,
+            target_make="Mercedes-Benz",
+            target_model="EQS",
+        )
+        self.assertEqual(len(deduped), 1)
+        merged = deduped[0]
+        self.assertEqual(merged.price, 45500)  # Kept cheaper price
+        self.assertEqual(merged.exterior_color, "Obsidian Black")  # Merged from l_rich
+        self.assertEqual(merged.seller_name, "Walnut Creek MB")  # Merged from l_rich
+        self.assertEqual(len(merged.photos), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

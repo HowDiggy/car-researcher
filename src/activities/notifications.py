@@ -36,10 +36,18 @@ class NotificationService:
 
             title = listing.get("title") or f"{listing.get('year')} {listing.get('make')} {listing.get('model')}"
             mileage = f"{listing.get('mileage', 0):,}"
-            dist = f"{listing.get('distance_miles', 0):.1f} mi" if listing.get("distance_miles") else "Bay Area"
+            dist_val = listing.get("distance_miles")
+            city_val = listing.get("location_city")
+            if dist_val is not None:
+                dist = f"{dist_val:.1f} mi ({city_val})" if city_val else f"{dist_val:.1f} mi"
+            else:
+                dist = city_val or "Bay Area"
+
             title_status = listing.get("title_status", "clean").upper()
             url = listing.get("url", "#")
             platform = listing.get("platform", "").upper()
+            seller_name = listing.get("seller_name")
+            dealer_str = f" | **Dealer:** {seller_name}" if seller_name else ""
 
             savings_str = f"-${abs(price_delta):,} below market" if price_delta < 0 else f"+${price_delta:,} above market"
 
@@ -47,7 +55,7 @@ class NotificationService:
                 f"### {i}. [{title}]({url}) — **${price:,}**",
                 f"- **Deal Score:** `{deal_score}/100` ({recommendation})",
                 f"- **Market Valuation:** Estimated Fair Value `${market_val:,}` (**{savings_str}**)",
-                f"- **Odometer:** {mileage} miles | **Proximity:** {dist} | **Title:** {title_status}",
+                f"- **Odometer:** {mileage} miles | **Proximity:** {dist} | **Title:** {title_status}{dealer_str}",
                 f"- **Platform:** {platform} | **Platform ID:** `{listing.get('platform_id')}`",
                 "",
             ])
@@ -62,8 +70,12 @@ class NotificationService:
             logger.info("Discord webhook not configured; skipping dispatch.")
             return False
 
+        safe_content = markdown_content
+        if len(safe_content) > 1950:
+            safe_content = safe_content[:1950].rsplit("\n", 1)[0] + "\n*...(truncated for Discord limit)*"
+
         payload = {
-            "content": markdown_content[:1990], # Discord 2000-char message limit
+            "content": safe_content,
         }
         data = json.dumps(payload).encode("utf-8")
 
