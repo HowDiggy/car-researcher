@@ -117,11 +117,12 @@ To add a new vehicle model to the surveillance schedule, edit `src/config/settin
 {"make": "Porsche", "model": "Taycan", "min_year": 2021}
 ```
 
-If it is a luxury or performance vehicle with an original MSRP above \$55,000, register its estimated base MSRP in `src/activities/scoring.py`:
+If it is a luxury or performance vehicle with an original MSRP above \$55,000, register its estimated base MSRP (and optional trim-specific overrides) in `src/activities/scoring.py`:
 
 ```python
 # In src/activities/scoring.py:
 MODEL_BASE_MSRP_LOOKUP["porsche:taycan"] = 90000
+TRIM_MSRP_OVERRIDES.append(("porsche", ["taycan", "turbo"], 160000))
 ```
 
 ### Recipe B: Adding a New Marketplace Scraper
@@ -159,8 +160,8 @@ python3 -m unittest discover tests -p "*unittest.py"
 
 **Expected output:**
 ```
-Ran 13 tests in 0.002s
+Ran 19 tests in 0.003s
 OK
 ```
 
-All 13 tests must pass with zero external dependencies and zero network access.
+All 19 tests must pass with zero external dependencies and zero network access.
