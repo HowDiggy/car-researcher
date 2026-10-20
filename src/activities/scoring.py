@@ -28,8 +28,19 @@ class DealScorer:
 
     @classmethod
     def get_estimated_original_msrp(cls, make: str, model: str) -> int:
-        key = f"{make.strip().lower()}:{model.strip().lower()}"
-        return MODEL_BASE_MSRP_LOOKUP.get(key, 48000)
+        make_clean = make.strip().lower()
+        model_clean = model.strip().lower()
+        exact_key = f"{make_clean}:{model_clean}"
+        if exact_key in MODEL_BASE_MSRP_LOOKUP:
+            return MODEL_BASE_MSRP_LOOKUP[exact_key]
+
+        # Fuzzy / substring matching for model trims (e.g. EQS 450+, i4 Gran Coupe)
+        for lookup_key, msrp in MODEL_BASE_MSRP_LOOKUP.items():
+            l_make, l_model = lookup_key.split(":", 1)
+            if l_make in make_clean and (l_model in model_clean or model_clean in l_model):
+                return msrp
+
+        return 48000
 
     @classmethod
     def calculate_fair_market_value(

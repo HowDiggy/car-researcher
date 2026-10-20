@@ -48,17 +48,32 @@ class CarsComScraper(BaseListingScraper):
     ) -> str:
         """Construct a standardized search URL for Cars.com."""
         make_slug = make.lower().replace(" ", "_").replace("-", "_")
-        model_slug = f"{make_slug}-{model.lower().replace(' ', '_').replace('-', '_')}"
+        clean_model = model.lower().replace(" ", "_").replace("-", "_")
+
+        # Handle specific platform model slug deviations
+        if make_slug == "bmw" and clean_model == "i4":
+            model_slug = "bmw-i4_gran_coupe"
+            use_keyword = False
+        elif "mercedes" in make_slug and ("eqs" in clean_model or "eqe" in clean_model):
+            model_slug = None
+            use_keyword = True
+        else:
+            model_slug = f"{make_slug}-{clean_model}"
+            use_keyword = False
 
         params: Dict[str, Any] = {
             "stock_type": "all",
             "makes[]": make_slug,
-            "models[]": model_slug,
             "zip": zip_code,
             "maximum_distance": radius_miles,
             "page_size": 50,
             "page": page,
         }
+        if use_keyword:
+            params["keyword"] = model.upper()
+        elif model_slug:
+            params["models[]"] = model_slug
+
         if min_price:
             params["list_price_min"] = min_price
         if max_price:
@@ -72,8 +87,32 @@ class CarsComScraper(BaseListingScraper):
         return f"{CARS_COM_BASE_URL}?{query}"
 
     def parse_html_listings(self, html_content: str, source_url: str) -> List[VehicleListing]:
-        """Extract listings using JSON-LD structured data, falling back to DOM parsing."""
+        """Extract listings using CarsWeb.SearchController hydration, JSON-LD, or DOM parsing."""
         listings: List[VehicleListing] = []
+
+        # Strategy 1: CarsWeb.SearchController.index JSON Blob
+        search_controller_match = re.search(
+            r'<script[^>]*id=["\']CarsWeb\.SearchController\.index["\'][^>]*>(.*?)</script>',
+            html_content,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if search_controller_match:
+            try:
+                controller_data = json.loads(search_controller_match.group(1).strip())
+                results = controller_data.get("srp_results", {}).get("results", [])
+                for item in results:
+                    if item.get("__typename") == "SrpListingGridCard":
+                        ctx_str = item.get("analytics", {}).get("context", "")
+                        if ctx_str:
+                            ctx = json.loads(ctx_str)
+                            listing = self._convert_search_controller_to_listing(ctx, source_url)
+                            if listing:
+                                listings.append(listing)
+                if listings:
+                    logger.info(f"CarsComScraper: Extracted {len(listings)} listings via CarsWeb.SearchController.index.")
+                    return listings
+            except Exception as e:
+                logger.debug(f"CarsWeb.SearchController.index parse error: {e}")
 
         # Strategy 1: JSON-LD Extraction
         jsonld_pattern = re.compile(
@@ -140,6 +179,56 @@ class CarsComScraper(BaseListingScraper):
 
         logger.info(f"CarsComScraper: Extracted {len(listings)} listings.")
         return listings
+
+    def _convert_search_controller_to_listing(self, item: Dict[str, Any], source_url: str) -> Optional[VehicleListing]:
+        """Convert a CarsWeb.SearchController.index analytics item into a VehicleListing domain model."""
+        price_val = item.get("price")
+        try:
+            price = int(float(str(price_val).replace("$", "").replace(",", "")))
+        except (ValueError, TypeError):
+            price = 0
+
+        if price <= 0:
+            return None
+
+        mileage_val = item.get("mileage")
+        try:
+            mileage = int(float(str(mileage_val).replace(",", "")))
+        except (ValueError, TypeError):
+            mileage = 0
+
+        year_val = item.get("year")
+        try:
+            year = int(str(year_val)[:4])
+        except (ValueError, TypeError):
+            year = 2023
+
+        make = item.get("make") or ""
+        model = item.get("model") or ""
+        trim = item.get("trim") or ""
+        title = f"{year} {make} {model} {trim}".strip()
+        listing_id = str(item.get("listingId") or "")
+        url = f"https://www.cars.com/vehicledetail/{listing_id}/" if listing_id else source_url
+
+        seller = item.get("seller") or {}
+        seller_name = seller.get("dealerName") if isinstance(seller, dict) else None
+
+        return VehicleListing(
+            vin=item.get("vin"),
+            platform=self.platform_name,
+            platform_id=listing_id or item.get("vin") or str(abs(hash(url))),
+            url=url,
+            title=title,
+            price=price,
+            mileage=mileage,
+            make=make,
+            model=model,
+            year=year,
+            trim_detail=trim,
+            exterior_color=item.get("exteriorColor"),
+            seller_name=seller_name,
+            raw_data=item,
+        )
 
     def _convert_jsonld_to_listing(self, data: Dict[str, Any], source_url: str) -> Optional[VehicleListing]:
         """Convert a Schema.org Car JSON-LD dictionary into a VehicleListing domain model."""
@@ -320,15 +409,34 @@ class CarsComScraper(BaseListingScraper):
             async with async_playwright() as p:
                 browser = await p.chromium.launch(
                     headless=self.headless,
-                    args=["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                    ],
                 )
                 context = await browser.new_context(
-                    user_agent=self.get_random_user_agent(),
-                    viewport={"width": 1440, "height": 900},
+                    user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+                    viewport={"width": 1920, "height": 1080},
+                    extra_http_headers={
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                        "Sec-CH-UA": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
+                        "Sec-CH-UA-Mobile": "?0",
+                        "Sec-CH-UA-Platform": '"Linux"',
+                        "Sec-Fetch-Dest": "document",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "none",
+                        "Sec-Fetch-User": "?1",
+                        "Upgrade-Insecure-Requests": "1",
+                    },
+                )
+                await context.add_init_script(
+                    'Object.defineProperty(navigator, "webdriver", {get: () => undefined}); window.chrome = { runtime: {} };'
                 )
                 page = await context.new_page()
                 await page.goto(url, wait_until="domcontentloaded", timeout=int(self.timeout * 1000))
-                await self.random_delay(1.5, 3.0)
+                await page.wait_for_timeout(1500)
                 html = await page.content()
                 await browser.close()
                 return self.parse_html_listings(html, url)

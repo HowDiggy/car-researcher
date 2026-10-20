@@ -89,6 +89,14 @@ async def start_temporal_worker() -> None:
     logger.info(f"Connecting to Temporal Server at {settings.temporal_host}...")
     client = await Client.connect(settings.temporal_host, namespace=settings.temporal_namespace)
 
+    # Initialize PostgreSQL & TimescaleDB schema if available
+    try:
+        from src.db.engine import init_db
+        await init_db()
+        logger.info("Database schemas and TimescaleDB hypertables verified/initialized.")
+    except Exception as db_err:
+        logger.warning(f"Database initialization check skipped/failed: {db_err}")
+
     worker = Worker(
         client,
         task_queue=settings.temporal_task_queue_default,
@@ -127,6 +135,14 @@ async def trigger_temporal_workflow(
 
     logger.info(f"Connecting to Temporal Server at {settings.temporal_host}...")
     client = await Client.connect(settings.temporal_host, namespace=settings.temporal_namespace)
+
+    # Initialize PostgreSQL & TimescaleDB schema if available
+    try:
+        from src.db.engine import init_db
+        await init_db()
+        logger.info("Database schemas and TimescaleDB hypertables verified/initialized.")
+    except Exception as db_err:
+        logger.warning(f"Database initialization check skipped/failed: {db_err}")
 
     workflow_id = f"car-research-scan-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
     logger.info(f"Triggering DailyCarResearchPipelineWorkflow with ID: {workflow_id}")

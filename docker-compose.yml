@@ -65,6 +65,8 @@ services:
         condition: service_healthy
       temporal:
         condition: service_started
+    volumes:
+      - ./src:/app/src
 
 volumes:
   pgdata:

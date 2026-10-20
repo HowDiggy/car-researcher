@@ -15,7 +15,7 @@ from src.models.domain import VehicleListing
 
 logger = logging.getLogger(__name__)
 
-CARGURUS_SEARCH_BASE = "https://www.cargurus.com/Cars/inventorysearch"
+CARGURUS_SEARCH_BASE = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action"
 
 
 class CarGurusScraper(BaseListingScraper):
@@ -25,7 +25,7 @@ class CarGurusScraper(BaseListingScraper):
         self,
         headless: bool = True,
         proxy_url: Optional[str] = None,
-        timeout: float = 35.0,
+        timeout: float = 12.0,
     ):
         super().__init__(
             platform_name="cargurus",
@@ -234,11 +234,15 @@ class CarGurusScraper(BaseListingScraper):
                             pass
 
                 page.on("response", handle_response)
-                await page.goto(url, wait_until="domcontentloaded", timeout=int(self.timeout * 1000))
-                await self.random_delay(2.0, 4.0)
+                resp = await page.goto(url, wait_until="domcontentloaded", timeout=int(self.timeout * 1000))
+                if resp and resp.status in (403, 429):
+                    logger.debug(f"CarGurus returned HTTP {resp.status}; skipping DOM scroll.")
+                    await browser.close()
+                    return []
 
+                await self.random_delay(1.0, 2.0)
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2);")
-                await self.random_delay(1.5, 2.5)
+                await self.random_delay(1.0, 1.5)
 
                 if not captured_listings:
                     html = await page.content()

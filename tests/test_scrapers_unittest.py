@@ -69,6 +69,40 @@ class TestScrapers(unittest.TestCase):
         self.assertEqual(l.year, 2023)
         self.assertEqual(l.seller_name, "SF Bay Auto Gallery")
 
+    def test_carscom_search_controller_index_parsing(self):
+        sample_html = """
+        <html>
+        <head>
+            <script id="CarsWeb.SearchController.index" type="application/json">
+            {
+                "srp_results": {
+                    "results": [
+                        {
+                            "__typename": "SrpListingGridCard",
+                            "analytics": {
+                                "context": "{\\"trim\\":\\"Standard Range\\",\\"listingId\\":\\"097078bf-24b3-4ee2-b583-73e7f2109f1c\\",\\"mileage\\":\\"26879\\",\\"model\\":\\"Model 3\\",\\"price\\":\\"24794\\",\\"make\\":\\"Tesla\\",\\"vin\\":\\"5YJ3E1EA5LF738257\\",\\"year\\":\\"2020\\",\\"seller\\":{\\"dealerName\\":\\"Ever Cars SF\\"}}"
+                            }
+                        }
+                    ]
+                }
+            }
+            </script>
+        </head>
+        <body></body>
+        </html>
+        """
+        listings = self.carscom.parse_html_listings(sample_html, "https://www.cars.com/test")
+        self.assertEqual(len(listings), 1)
+        l = listings[0]
+        self.assertEqual(l.vin, "5YJ3E1EA5LF738257")
+        self.assertEqual(l.price, 24794)
+        self.assertEqual(l.mileage, 26879)
+        self.assertEqual(l.make, "Tesla")
+        self.assertEqual(l.model, "Model 3")
+        self.assertEqual(l.year, 2020)
+        self.assertEqual(l.seller_name, "Ever Cars SF")
+        self.assertIn("097078bf-24b3-4ee2-b583-73e7f2109f1c", l.url)
+
     def test_cargurus_api_payload_parsing(self):
         sample_payload = {
             "listings": [

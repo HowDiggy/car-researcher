@@ -40,6 +40,11 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize relational tables."""
+    """Initialize relational tables and TimescaleDB hypertable."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("SELECT create_hypertable('price_snapshots', 'time', if_not_exists => TRUE);"))
+        except Exception:
+            pass
