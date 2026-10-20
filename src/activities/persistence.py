@@ -89,6 +89,16 @@ async def persist_listings_and_scores_activity(scored_deals: List[Dict[str, Any]
                         existing_listing.location_city = listing_data["location_city"]
                     if listing_data.get("seller_name") and not existing_listing.seller_name:
                         existing_listing.seller_name = listing_data["seller_name"]
+                    if listing_data.get("photos") and not existing_listing.photos:
+                        existing_listing.photos = listing_data["photos"]
+
+                    # Merge raw_data while preserving user bookmark/dismiss state
+                    merged_raw = dict(existing_listing.raw_data or {})
+                    incoming_raw = dict(listing_data.get("raw_data") or {})
+                    for k, v in incoming_raw.items():
+                        if k not in ("user_bookmarked", "user_dismissed"):
+                            merged_raw[k] = v
+                    existing_listing.raw_data = merged_raw
 
                     # Calculate empirical Days on Market from first_seen
                     first_seen_dt = existing_listing.first_seen

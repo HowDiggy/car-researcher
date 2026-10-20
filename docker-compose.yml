@@ -68,5 +68,27 @@ services:
     volumes:
       - ./src:/app/src
 
+  dashboard:
+    image: researcher-worker
+    container_name: researcher-dashboard
+    restart: unless-stopped
+    command: ["python", "src/runner.py", "--start-dashboard", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://researcher:researcher_pass@postgres:5432/researcher
+      - TEMPORAL_HOST=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE_DEFAULT=car-research-queue
+      - SEARCH_ZIP_CODE=94103
+      - SEARCH_RADIUS_MILES=60
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    volumes:
+      - ./src:/app/src
+
 volumes:
   pgdata:

@@ -12,9 +12,11 @@ Welcome to the operator manual for your AI-powered Car Research and Daily Survei
 | **Run an instant scan for all 14 EV models** | `python3 src/runner.py --run-once` |
 | **Scan a specific car model** | `python3 src/runner.py --make "Mercedes-Benz" --model "EQS" --radius 60` |
 | **Change search radius on the fly** | `python3 src/runner.py --make "BMW" --model "i4" --radius 40` |
-| **Start full Docker stack** *(Postgres + Temporal)* | `docker-compose up -d` |
-| **Start Temporal background worker** | `python3 src/runner.py --start-worker` |
+| **Start full Docker stack** *(Postgres + Temporal + Worker + Dashboard)* | `docker compose up -d` |
+| **Open Web Dashboard (Deals, History, NHTSA/EPA, CSV Export)** | Open `http://localhost:8000` in your browser |
 | **View Temporal Web UI** | Open `http://localhost:8080` in your browser |
+| **Start Web Dashboard locally (outside Docker)** | `python3 src/runner.py --start-dashboard --port 8000` |
+| **Start Temporal background worker** | `python3 src/runner.py --start-worker` |
 
 ---
 

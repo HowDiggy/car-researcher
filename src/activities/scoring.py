@@ -452,12 +452,18 @@ def _dict_to_vehicle_listing(listing_dict: Dict[str, Any]) -> VehicleListing:
 def _compact_listing_dict(listing_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Prune oversized raw_data blobs to keep Temporal history payloads compact."""
     raw = listing_dict.get("raw_data") or {}
-    compact_raw = {}
-    for k in ("days_on_market", "cpoIndicator", "drivetrain", "fuelType", "stockType", "seller_zip"):
+    compact_raw: Dict[str, Any] = {}
+    for k in ("days_on_market", "cpoIndicator", "drivetrain", "fuelType", "stockType", "seller_zip", "user_bookmarked", "user_dismissed"):
         if k in raw:
             compact_raw[k] = raw[k]
     if isinstance(raw.get("seller"), dict) and "zip" in raw["seller"]:
         compact_raw["seller_zip"] = raw["seller"]["zip"]
+    if listing_dict.get("make"):
+        compact_raw["make"] = listing_dict["make"]
+    if listing_dict.get("model"):
+        compact_raw["model"] = listing_dict["model"]
+    if listing_dict.get("year"):
+        compact_raw["year"] = listing_dict["year"]
 
     compacted = dict(listing_dict)
     compacted["raw_data"] = compact_raw

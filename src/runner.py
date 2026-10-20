@@ -211,6 +211,8 @@ def main():
     parser.add_argument("--model", type=str, help="Filter to specific model (e.g., 'EQS')")
     parser.add_argument("--radius", type=int, help="Search radius in miles (default: 60)")
     parser.add_argument("--start-worker", action="store_true", help="Start Temporal worker daemon")
+    parser.add_argument("--start-dashboard", action="store_true", help="Start Local Web Dashboard server (default port 8000)")
+    parser.add_argument("--port", type=int, default=8000, help="Port for the Local Web Dashboard (default: 8000)")
     parser.add_argument("--trigger-workflow", action="store_true", help="Trigger a workflow execution on the Temporal cluster")
     parser.add_argument("--schedule-daily", action="store_true", help="Register recurring daily Schedule on Temporal")
 
@@ -218,6 +220,9 @@ def main():
 
     if args.start_worker:
         asyncio.run(start_temporal_worker())
+    elif args.start_dashboard:
+        from src.dashboard.app import start_dashboard_server
+        asyncio.run(start_dashboard_server(host="0.0.0.0", port=args.port))
     elif args.trigger_workflow:
         asyncio.run(trigger_temporal_workflow(make=args.make, model=args.model, radius=args.radius))
     elif args.schedule_daily:

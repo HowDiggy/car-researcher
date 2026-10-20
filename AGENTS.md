@@ -77,7 +77,7 @@ researcher/
 │   ├── architecture.md                        ← Full systems architecture specification
 │   └── car-research-agent-data-taxonomy.md    ← Exhaustive 13-category buyer evaluation taxonomy
 ├── src/
-│   ├── runner.py                              ← CLI entrypoint & Temporal worker daemon
+│   ├── runner.py                              ← CLI entrypoint, Temporal worker, & Dashboard launcher
 │   ├── config/
 │   │   └── settings.py                        # Pydantic Settings with dataclass fallback
 │   ├── models/
@@ -85,6 +85,10 @@ researcher/
 │   ├── db/
 │   │   ├── engine.py                          # Async SQLAlchemy engine & session factory
 │   │   └── models.py                          # Relational + TimescaleDB ORM schemas
+│   ├── dashboard/
+│   │   ├── app.py                             # Async HTTP/ASGI Web Dashboard server (port 8000)
+│   │   ├── queries.py                         # Lateral join queries, triage toggles, & exports
+│   │   └── templates.py                       # Tailwind CSS + HTMX UI components & modals
 │   ├── activities/
 │   │   ├── gov_apis.py                        # NHTSA vPIC, Recalls, Complaints, EPA client
 │   │   ├── scoring.py                         # Multi-factor DealScorer & luxury retention curves
@@ -102,7 +106,8 @@ researcher/
 └── tests/
     ├── test_domain_unittest.py                # Tests for domain models, scoring math, Gov APIs
     ├── test_scrapers_unittest.py              # Tests for scraper parsers & VIN deduplication
-    └── test_daily_pipeline_unittest.py        # Tests for workflow signals, queries, and execution
+    ├── test_daily_pipeline_unittest.py        # Tests for workflow signals, queries, and execution
+    └── test_dashboard_unittest.py             # Tests for Web Dashboard routes, filters, & exports
 ```
 
 ---
@@ -160,8 +165,8 @@ python3 -m unittest discover tests -p "*unittest.py"
 
 **Expected output:**
 ```
-Ran 19 tests in 0.003s
+Ran 24 tests in 0.012s
 OK
 ```
 
-All 19 tests must pass with zero external dependencies and zero network access.
+All 24 tests must pass with zero external dependencies and zero network access.
