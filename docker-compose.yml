@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: timescale/timescaledb-ha:pg16
@@ -27,12 +25,11 @@ services:
     ports:
       - "7233:7233"
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=5432
       - POSTGRES_USER=researcher
       - POSTGRES_PWD=researcher_pass
       - POSTGRES_SEEDS=postgres
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     depends_on:
       postgres:
         condition: service_healthy
