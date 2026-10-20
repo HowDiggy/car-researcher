@@ -4,7 +4,7 @@ from typing import Any, Callable
 logger = logging.getLogger(__name__)
 
 try:
-    from temporalio import workflow
+    from temporalio import workflow, activity
     from temporalio.common import RetryPolicy
     HAS_TEMPORAL = True
 except ImportError:
@@ -65,11 +65,19 @@ except ImportError:
                 return await wf_inst.run(*fn_args)
             return None
 
+    class _MockActivity:
+        @staticmethod
+        def defn(fn: Any = None, *args: Any, **kwargs: Any) -> Any:
+            if fn is None:
+                return lambda f: f
+            return fn
+
     workflow = _MockWorkflow()
+    activity = _MockActivity()
 
     class RetryPolicy:
         def __init__(self, **kwargs: Any) -> None:
             self.kwargs = kwargs
 
 
-__all__ = ["workflow", "RetryPolicy", "HAS_TEMPORAL"]
+__all__ = ["workflow", "activity", "RetryPolicy", "HAS_TEMPORAL"]

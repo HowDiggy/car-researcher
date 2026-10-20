@@ -46,5 +46,25 @@ services:
     depends_on:
       - temporal
 
+  worker:
+    build: .
+    container_name: researcher-worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://researcher:researcher_pass@postgres:5432/researcher
+      - TEMPORAL_HOST=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE_DEFAULT=car-research-queue
+      - TEMPORAL_TASK_QUEUE_SCRAPERS=car-scraper-queue
+      - SEARCH_ZIP_CODE=94103
+      - SEARCH_RADIUS_MILES=60
+      - SEARCH_MIN_PRICE=20000
+      - SEARCH_MAX_PRICE=60000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
 volumes:
   pgdata:

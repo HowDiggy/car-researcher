@@ -5,6 +5,7 @@ from src.models.domain import VehicleListing
 from src.activities.scrapers.carscom import CarsComScraper
 from src.activities.scrapers.cargurus import CarGurusScraper
 from src.config.settings import settings
+from src.workflows.temporal_compat import activity
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,7 @@ class MarketplaceAggregator:
 # -------------------------------------------------------------
 # Temporal Activity Wrapper
 # -------------------------------------------------------------
+@activity.defn
 async def scrape_target_model_activity(
     make: str,
     model: str,

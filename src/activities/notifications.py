@@ -4,6 +4,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 import urllib.request
 from src.config.settings import settings
+from src.workflows.temporal_compat import activity
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class NotificationService:
 # -------------------------------------------------------------
 # Temporal Activity Wrapper
 # -------------------------------------------------------------
+@activity.defn
 async def send_daily_deals_notification_activity(deals: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Temporal activity to format and notify user of top daily vehicle deals."""
     service = NotificationService()

@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Optional
 from src.models.domain import VehicleListing, DealScoreResult
+from src.workflows.temporal_compat import activity
 
 # Baseline original MSRP estimates when not explicitly decoded from Monroney/vPIC
 MODEL_BASE_MSRP_LOOKUP: Dict[str, int] = {
@@ -182,6 +183,7 @@ class DealScorer:
 # -------------------------------------------------------------
 # Temporal Activity Wrapper
 # -------------------------------------------------------------
+@activity.defn
 async def score_listing_activity(
     listing_dict: Dict[str, Any],
     base_msrp: Optional[int] = None,

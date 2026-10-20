@@ -11,9 +11,12 @@ try:
 except ImportError:
     HAS_SQLALCHEMY = False
 
+from src.workflows.temporal_compat import activity
+
 logger = logging.getLogger(__name__)
 
 
+@activity.defn
 async def persist_listings_and_scores_activity(scored_deals: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Temporal activity to persist active listings, price snapshots, and deal scores.

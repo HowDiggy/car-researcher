@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 import urllib.request
 import urllib.parse
 from src.models.domain import NHTSARecall, NHTSAComplaint, EPAFuelEconomy
+from src.workflows.temporal_compat import activity
 
 logger = logging.getLogger(__name__)
 
@@ -167,24 +168,28 @@ class GovAPIClient:
 # -------------------------------------------------------------
 # Temporal Activity Wrappers
 # -------------------------------------------------------------
+@activity.defn
 async def fetch_nhtsa_recalls_activity(make: str, model: str, year: int) -> List[Dict[str, Any]]:
     client = GovAPIClient()
     recalls = await client.get_recalls(make, model, year)
     return [r.__dict__ for r in recalls]
 
 
+@activity.defn
 async def fetch_nhtsa_complaints_activity(make: str, model: str, year: int) -> List[Dict[str, Any]]:
     client = GovAPIClient()
     complaints = await client.get_complaints(make, model, year)
     return [c.__dict__ for c in complaints]
 
 
+@activity.defn
 async def fetch_epa_data_activity(make: str, model: str, year: int) -> List[Dict[str, Any]]:
     client = GovAPIClient()
     epa_list = await client.get_epa_fuel_economy(make, model, year)
     return [e.__dict__ for e in epa_list]
 
 
+@activity.defn
 async def decode_vin_activity(vin: str) -> Dict[str, Any]:
     client = GovAPIClient()
     return await client.decode_vin(vin)
