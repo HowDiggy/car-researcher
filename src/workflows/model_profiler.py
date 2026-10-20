@@ -1,9 +1,7 @@
 from datetime import timedelta
 from typing import Dict, Any, List
-from temporalio import workflow
-from temporalio.common import RetryPolicy
+from src.workflows.temporal_compat import workflow, RetryPolicy
 
-# Import activity stubs (Temporal invokes activities by name or function reference)
 with workflow.unsafe.imports_passed_through():
     from src.activities.gov_apis import (
         fetch_nhtsa_recalls_activity,
