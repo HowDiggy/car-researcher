@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "car-researcher"
+version = "0.1.0"
+description = "Autonomous AI Agent pipeline for vehicle research, surveillance, and deal discovery"
+authors = [{ name = "Paulo Jauregui" }]
+requires-python = ">=3.11"
+dependencies = [
+    "temporalio>=1.7.0",
+    "sqlalchemy>=2.0.30",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.1",
+    "httpx>=0.27.0",
+    "playwright>=1.43.0",
+    "beautifulsoup4>=4.12.3",
+    "pgvector>=0.2.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0",
+    "pytest-asyncio>=0.23.6",
+    "black>=24.3.0",
+    "ruff>=0.3.4",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
