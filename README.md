@@ -2,13 +2,23 @@
 
 An AI-powered vehicle research and deal-discovery pipeline that runs daily, scouring the web for comprehensive intelligence on vehicles you're considering buying.
 
+## 📚 Essential Documentation
+
+* **[Operator Guide (`docs/OPERATOR_GUIDE.md`)](file:///Users/paulojauregui/projects/researcher/docs/OPERATOR_GUIDE.md)**: Daily usage, local CLI scans, Discord alerts setup, and troubleshooting.
+* **[Agent & LLM Guidelines (`AGENTS.md`)](file:///Users/paulojauregui/projects/researcher/AGENTS.md)**: Developer & AI onboarding guide, architectural invariants, code conventions, and recipes.
+* **[Architecture Specification (`docs/architecture.md`)](file:///Users/paulojauregui/projects/researcher/docs/architecture.md)**: Temporal durable execution, single-instance Postgres (TimescaleDB + pgvector), and data model.
+* **[Buyer Evaluation Taxonomy (`docs/car-research-agent-data-taxonomy.md`)](file:///Users/paulojauregui/projects/researcher/docs/car-research-agent-data-taxonomy.md)**: Exhaustive 13-category checklist (A through M).
+
 ## Project Structure
 
 ```
 researcher/
+├── AGENTS.md                                  # AI & Developer onboarding guide
+├── README.md                                  # Project overview & quickstart
 ├── docker/
 │   └── init.sql                               # Postgres init (TimescaleDB, pgvector, pg_trgm)
 ├── docs/
+│   ├── OPERATOR_GUIDE.md                      # Human operator manual & CLI guide
 │   ├── car-research-agent-data-taxonomy.md    # Exhaustive 13-category (A–M) buyer taxonomy
 │   └── architecture.md                        # Temporal + Postgres/TimescaleDB/pgvector architecture
 ├── src/
