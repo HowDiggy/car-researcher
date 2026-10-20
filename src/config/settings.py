@@ -23,14 +23,15 @@ class Settings(BaseSettings):
     search_zip_code: str = "94103"
     search_radius_miles: int = 60
     search_min_price: int = 20000
-    search_max_price: int = 55000
+    search_max_price: int = 60000
     search_min_year: int = 2021
     search_max_year: int = 2026
     search_powertrains: List[str] = Field(default_factory=lambda: ["BEV"])
 
-    # Target Vehicles Scope (Easily adjustable)
+    # Target Vehicles Scope (Mainstream + Upmarket / Luxury EVs)
     search_target_models: List[TargetVehicleConfig] = Field(
         default_factory=lambda: [
+            # Mainstream Bang-For-Buck
             TargetVehicleConfig(make="Hyundai", model="Ioniq 5", min_year=2022),
             TargetVehicleConfig(make="Hyundai", model="Ioniq 6", min_year=2023),
             TargetVehicleConfig(make="Kia", model="EV6", min_year=2022),
@@ -38,6 +39,15 @@ class Settings(BaseSettings):
             TargetVehicleConfig(make="Tesla", model="Model 3", min_year=2022),
             TargetVehicleConfig(make="Ford", model="Mustang Mach-E", min_year=2022),
             TargetVehicleConfig(make="Chevrolet", model="Bolt EUV", min_year=2022, max_year=2023),
+
+            # Upmarket & Luxury EV Depreciation Bargains
+            TargetVehicleConfig(make="BMW", model="i4", min_year=2022),
+            TargetVehicleConfig(make="Mercedes-Benz", model="EQS", min_year=2022),
+            TargetVehicleConfig(make="Mercedes-Benz", model="EQE", min_year=2023),
+            TargetVehicleConfig(make="Cadillac", model="Lyriq", min_year=2023),
+            TargetVehicleConfig(make="Genesis", model="GV60", min_year=2023),
+            TargetVehicleConfig(make="Polestar", model="2", min_year=2022),
+            TargetVehicleConfig(make="Audi", model="Q4 e-tron", min_year=2022),
         ]
     )
 

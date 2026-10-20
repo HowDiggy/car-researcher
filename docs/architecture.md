@@ -456,20 +456,33 @@ researcher/
 
 ## 6. Starter Watchlist: Bay Area EVs
 
-Based on market research for the best bang-for-buck EVs in your price range:
+### 6.1 Mainstream Bang-For-Buck Segment ($20k–$45k Used / $35k–$55k New)
 
 | Make | Model | Years | Used Range | New Range | Why |
 |:---|:---|:---|:---|:---|:---|
 | **Tesla** | Model Y | 2022–2025 | $28k–$42k | $35k–$55k | Best resale, Supercharger network, OTA updates |
 | **Tesla** | Model 3 | 2022–2025 | $22k–$35k | $35k–$45k | Highest value retention (~80-85%), sedan |
 | **Hyundai** | Ioniq 5 | 2022–2025 | $24k–$36k | $38k–$52k | 800V fast charging (10-80% in 18min), steep used discount |
-| **Hyundai** | Ioniq 6 | 2023–2025 | $26k–$38k | $38k–$52k | Sedan variant, excellent efficiency |
+| **Hyundai** | Ioniq 6 | 2023–2025 | $26k–$38k | $38k–$52k | Sedan variant, class-leading aerodynamic efficiency |
+| **Kia** | EV6 | 2022–2025 | $26k–$36k | $38k–$52k | 800V E-GMP platform, sportier crossover dynamics |
 | **Ford** | Mustang Mach-E | 2022–2025 | $25k–$38k | $38k–$48k | Sporty, above-avg retention for non-Tesla |
-| **Chevrolet** | Bolt EV/EUV | 2022–2023 | $15k–$22k | N/A (discontinued) | Budget king, new batteries from recall program |
-| **Kia** | EV6 | 2022–2025 | $26k–$36k | $38k–$52k | 800V like Ioniq 5, sportier styling |
+| **Chevrolet** | Bolt EUV | 2022–2023 | $15k–$22k | N/A (discontinued) | Budget king, new batteries from GM recall program |
+
+### 6.2 Upmarket & Luxury EV Depreciation Bargains ($30k–$60k Used)
 
 > [!TIP]
-> The Hyundai Ioniq 5, Kia EV6, and Ioniq 6 represent the best "bang for buck" on the used market because non-Tesla EVs suffer 45–50% depreciation in 2–3 years, meaning you get a $50k+ vehicle for $25–$35k. Tesla retains value better, so the used discount is smaller but the resale exit is safer.
+> **The Luxury EV "Depreciation Cliff":** 
+> Six-figure and premium EVs (Mercedes EQS, Cadillac Lyriq, BMW i4) experience the steepest depreciation in modern automotive history—shedding **45% to 60%+** of their original value in the first 2–3 years due to heavy initial MSRPs and off-lease inventory gluts. For used car buyers, this allows picking up near-new $60k–$115k flagship vehicles at mass-market prices.
+
+| Make | Model | Years | Original MSRP | Used Range | Why It's a Bargain |
+|:---|:---|:---|:---|:---|:---|
+| **BMW** | i4 (eDrive35/40/M50) | 2022–2025 | $52k–$75k | $30k–$44k | Excellent 4-Series Gran Coupe driving dynamics, hatchback utility, high build quality |
+| **Mercedes-Benz** | EQS (Sedan / SUV) | 2022–2024 | $104k–$135k | $45k–$60k | Extreme 55-60% depreciation cliff; flagship S-Class luxury, Hyperscreen, ultra-quiet cabin |
+| **Mercedes-Benz** | EQE (Sedan / SUV) | 2023–2025 | $75k–$95k | $35k–$48k | Midsize luxury, rear-wheel steering available, refined interior under $45k used |
+| **Cadillac** | Lyriq (Tech/Lux/Sport) | 2023–2025 | $60k–$80k | $32k–$45k | GM Ultium platform, available Super Cruise hands-free highway driving, 33" 9K display |
+| **Genesis** | GV60 (Adv/Perf) | 2023–2025 | $60k–$74k | $31k–$42k | E-GMP 800V charging, crystal sphere shifter, Nappa leather, 429hp boost mode |
+| **Polestar** | 2 (Single/Dual Motor) | 2022–2024 | $50k–$65k | $22k–$34k | Scandinavian fastback styling, native Android Automotive OS, great crash safety |
+| **Audi** | Q4 e-tron | 2022–2024 | $50k–$64k | $26k–$38k | Premium compact crossover, Audi virtual cockpit, comfortable commuter ergonomics |
 
 ---
 

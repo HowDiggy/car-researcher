@@ -87,6 +87,31 @@ class TestCarResearcherDomain(unittest.TestCase):
         self.assertNotEqual(score_res.recommendation, "EXCELLENT_DEAL")
         self.assertLess(score_res.score_breakdown["history_score"], 60.0)
 
+    def test_deal_scorer_luxury_vehicle(self):
+        # Mercedes-Benz EQS original MSRP ~$105k, now priced at $45k with 30k miles
+        listing = VehicleListing(
+            vin="W1KCG2EB6NA123456",
+            platform="cargurus",
+            platform_id="cg-eqs-01",
+            url="https://example.com/eqs",
+            title="2022 Mercedes-Benz EQS 450+ Sedan",
+            price=45000,
+            mileage=30000,
+            make="Mercedes-Benz",
+            model="EQS",
+            year=2022,
+            distance_miles=22.0,
+            title_status="clean",
+            accident_count=0,
+            owner_count=1,
+            raw_data={"days_on_market": 55},
+        )
+        score_res = DealScorer.score_listing(listing)
+        self.assertIsNotNone(score_res.market_value)
+        # Should recognize base MSRP around 105k and calculate fair market value
+        self.assertGreater(score_res.market_value, 40000)
+        self.assertIn(score_res.recommendation, ["EXCELLENT_DEAL", "GOOD_VALUE", "FAIR_MARKET"])
+
     def test_gov_api_vin_decoding_mock(self):
         mock_payload = {
             "Results": [
