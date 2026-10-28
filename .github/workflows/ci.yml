@@ -118,7 +118,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: HowDiggy/k8s-gitops
-          token: ""
           ssh-key: ${{ secrets.GITOPS_DEPLOY_KEY }}
           ref: main
 
