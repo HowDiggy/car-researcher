@@ -90,6 +90,16 @@ class CarsComScraper(BaseListingScraper):
         """Extract listings using CarsWeb.SearchController hydration, JSON-LD, or DOM parsing."""
         listings: List[VehicleListing] = []
 
+        # Extract origin_zip from source_url if present
+        origin_zip = None
+        try:
+            parsed_url = urllib.parse.urlparse(source_url)
+            qs = urllib.parse.parse_qs(parsed_url.query)
+            if "zip" in qs and qs["zip"]:
+                origin_zip = qs["zip"][0]
+        except Exception:
+            pass
+
         # Strategy 1: CarsWeb.SearchController.index JSON Blob
         search_controller_match = re.search(
             r'<script[^>]*id=["\']CarsWeb\.SearchController\.index["\'][^>]*>(.*?)</script>',
@@ -105,7 +115,7 @@ class CarsComScraper(BaseListingScraper):
                         ctx_str = item.get("analytics", {}).get("context", "")
                         if ctx_str:
                             ctx = json.loads(ctx_str)
-                            listing = self._convert_search_controller_to_listing(ctx, source_url)
+                            listing = self._convert_search_controller_to_listing(ctx, source_url, origin_zip=origin_zip)
                             if listing:
                                 listings.append(listing)
                 if listings:
@@ -180,7 +190,12 @@ class CarsComScraper(BaseListingScraper):
         logger.info(f"CarsComScraper: Extracted {len(listings)} listings.")
         return listings
 
-    def _convert_search_controller_to_listing(self, item: Dict[str, Any], source_url: str) -> Optional[VehicleListing]:
+    def _convert_search_controller_to_listing(
+        self,
+        item: Dict[str, Any],
+        source_url: str,
+        origin_zip: Optional[str] = None,
+    ) -> Optional[VehicleListing]:
         """Convert a CarsWeb.SearchController.index analytics item into a VehicleListing domain model."""
         price_val = item.get("price")
         try:
@@ -215,7 +230,10 @@ class CarsComScraper(BaseListingScraper):
         seller_zip = seller.get("zip") if isinstance(seller, dict) else None
 
         from src.activities.scoring import BayAreaGeoLookup
-        est_distance, est_city = BayAreaGeoLookup.resolve_zip(seller_zip)
+        est_distance, est_city = BayAreaGeoLookup.resolve_zip(seller_zip, origin_zip=origin_zip)
+
+        if seller_zip and "seller_zip" not in item:
+            item["seller_zip"] = seller_zip
 
         thumb = item.get("primaryThumbnail")
         photos = [thumb] if thumb else []

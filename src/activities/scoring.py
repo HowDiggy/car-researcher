@@ -107,104 +107,188 @@ STANDARD_RETENTION_ANCHORS: List[Tuple[float, float]] = [
     (8.0, 0.30),
 ]
 
-# Zero-dependency Bay Area ZIP-to-Distance (from SF 94103) and City lookup
+# Zero-dependency Bay Area ZIP-to-Coordinates (lat, lon, city) mapping
+BAY_AREA_ZIP_COORDS: Dict[str, Tuple[float, float, str]] = {
+    # San Francisco (941xx)
+    "94102": (37.7786, -122.4212, "San Francisco"),
+    "94103": (37.7726, -122.4111, "San Francisco"),
+    "94107": (37.7658, -122.3963, "San Francisco"),
+    "94109": (37.7929, -122.4212, "San Francisco"),
+    "94110": (37.7487, -122.4158, "San Francisco"),
+    "941": (37.7749, -122.4194, "San Francisco"),
+
+    # San Mateo County / Peninsula (940xx, 944xx)
+    "94014": (37.6908, -122.4412, "Daly City"),
+    "94015": (37.6749, -122.4702, "Daly City"),
+    "94080": (37.6547, -122.4077, "South San Francisco"),
+    "94066": (37.6305, -122.4111, "San Bruno"),
+    "94010": (37.5779, -122.3647, "Burlingame"),
+    "94070": (37.4984, -122.2619, "San Carlos"),
+    "94063": (37.4852, -122.2364, "Redwood City"),
+    "94025": (37.4538, -122.1822, "Menlo Park"),
+    "94040": (37.3861, -122.0839, "Mountain View"),
+    "94043": (37.4110, -122.0710, "Mountain View"),
+    "94086": (37.3688, -122.0363, "Sunnyvale"),
+    "94087": (37.3489, -122.0326, "Sunnyvale"),
+    "940": (37.5500, -122.3000, "Peninsula"),
+    "943": (37.4419, -122.1430, "Palo Alto"),
+    "94401": (37.5630, -122.3255, "San Mateo"),
+    "94402": (37.5485, -122.3355, "San Mateo"),
+    "94403": (37.5348, -122.3039, "San Mateo"),
+    "944": (37.5485, -122.3255, "San Mateo"),
+
+    # Alameda & Contra Costa County / East Bay (945xx, 946xx, 947xx, 948xx)
+    "94601": (37.7753, -122.2248, "Oakland"),
+    "94611": (37.8286, -122.2104, "Oakland"),
+    "94612": (37.8080, -122.2691, "Oakland"),
+    "946": (37.8044, -122.2712, "Oakland"),
+    "947": (37.8715, -122.2730, "Berkeley"),
+    "948": (37.9358, -122.3477, "Richmond"),
+    "94501": (37.7652, -122.2416, "Alameda"),
+    "94577": (37.7249, -122.1561, "San Leandro"),
+    "94578": (37.7011, -122.1287, "San Leandro"),
+    "94541": (37.6688, -122.0808, "Hayward"),
+    "94544": (37.6358, -122.0536, "Hayward"),
+    "94545": (37.6436, -122.1158, "Hayward"),
+    "94536": (37.5617, -121.9938, "Fremont"),
+    "94538": (37.5255, -121.9886, "Fremont"),
+    "94539": (37.5312, -121.9195, "Fremont"),
+    "94560": (37.5249, -122.0408, "Newark"),
+    "94568": (37.7022, -121.9358, "Dublin"),
+    "94566": (37.6624, -121.8747, "Pleasanton"),
+    "94588": (37.6974, -121.8907, "Pleasanton"),
+    "94550": (37.6819, -121.7680, "Livermore"),
+    "94551": (37.7088, -121.7588, "Livermore"),
+    "94596": (37.8938, -122.0597, "Walnut Creek"),
+    "94597": (37.9142, -122.0583, "Walnut Creek"),
+    "94598": (37.9048, -122.0238, "Walnut Creek"),
+    "94520": (37.9780, -122.0311, "Concord"),
+    "94521": (37.9622, -121.9619, "Concord"),
+    "94523": (37.9613, -122.0722, "Pleasant Hill"),
+    "94533": (38.2568, -122.0400, "Fairfield"),
+    "94534": (38.2255, -122.1389, "Fairfield"),
+    "94558": (38.3047, -122.2989, "Napa"),
+    "94589": (38.1394, -122.2572, "Vallejo"),
+    "94591": (38.1069, -122.2183, "Vallejo"),
+    "94509": (38.0049, -121.8058, "Antioch"),
+    "945": (37.7500, -122.0000, "East Bay"),
+
+    # Marin & North Bay (949xx, 954xx)
+    "94901": (37.9735, -122.5311, "San Rafael"),
+    "94925": (37.9255, -122.5275, "Corte Madera"),
+    "94941": (37.9060, -122.5450, "Mill Valley"),
+    "94945": (38.1074, -122.5697, "Novato"),
+    "94952": (38.2324, -122.6367, "Petaluma"),
+    "949": (38.0000, -122.6000, "Marin County"),
+    "95401": (38.4405, -122.7141, "Santa Rosa"),
+    "95407": (38.4180, -122.7290, "Santa Rosa"),
+    "954": (38.4405, -122.7141, "Santa Rosa"),
+
+    # Santa Clara County / Silicon Valley / South Bay (950xx, 951xx)
+    "95050": (37.3541, -121.9552, "Santa Clara"),
+    "95051": (37.3589, -121.9869, "Santa Clara"),
+    "95054": (37.3970, -121.9655, "Santa Clara"),
+    "95014": (37.3230, -122.0322, "Cupertino"),
+    "95035": (37.4323, -121.8996, "Milpitas"),
+    "95008": (37.2872, -121.9453, "Campbell"),
+    "95030": (37.2358, -121.9744, "Los Gatos"),
+    "95032": (37.2363, -121.9427, "Los Gatos"),
+    "95070": (37.2638, -122.0230, "Saratoga"),
+    "95020": (37.0058, -121.5683, "Gilroy"),
+    "95060": (36.9741, -122.0308, "Santa Cruz"),
+    "950": (37.3000, -121.9000, "South Bay"),
+    "95110": (37.3362, -121.9006, "San Jose"),
+    "95112": (37.3533, -121.8841, "San Jose"),
+    "95117": (37.3106, -121.9708, "San Jose"),
+    "95123": (37.2436, -121.8344, "San Jose"),
+    "95124": (37.2561, -121.9169, "San Jose"),
+    "95125": (37.2947, -121.8942, "San Jose"),
+    "95126": (37.3283, -121.9114, "San Jose"),
+    "95128": (37.3175, -121.9381, "San Jose"),
+    "95136": (37.2625, -121.8483, "San Jose"),
+    "951": (37.3382, -121.8863, "San Jose"),
+
+    # Greater Northern California / Outer Central Valley (952xx, 953xx, 956xx, 957xx, 958xx)
+    "952": (37.9577, -121.2908, "Stockton"),
+    "953": (37.6391, -120.9969, "Modesto"),
+    "956": (38.3566, -121.9877, "Vacaville"),
+    "957": (38.7521, -121.2880, "Roseville"),
+    "958": (38.5816, -121.4944, "Sacramento"),
+}
+
+# Legacy static lookup table kept for backward compatibility
 BAY_AREA_ZIP_MAP: Dict[str, Tuple[float, str]] = {
-    "941": (3.0, "San Francisco"),
-    "94014": (7.5, "Daly City"),
-    "94015": (8.5, "Daly City"),
-    "94080": (9.5, "South San Francisco"),
-    "94066": (11.5, "San Bruno"),
-    "94010": (15.0, "Burlingame"),
-    "94063": (24.0, "Redwood City"),
-    "94070": (22.0, "San Carlos"),
-    "94040": (34.0, "Mountain View"),
-    "94043": (33.0, "Mountain View"),
-    "94086": (38.0, "Sunnyvale"),
-    "94087": (39.0, "Sunnyvale"),
-    "940": (18.0, "Peninsula"),
-    "943": (29.0, "Palo Alto"),
-    "944": (17.5, "San Mateo"),
-    "946": (10.0, "Oakland"),
-    "947": (12.0, "Berkeley"),
-    "948": (15.0, "Richmond"),
-    "94901": (18.0, "San Rafael"),
-    "94925": (13.0, "Corte Madera"),
-    "94941": (12.0, "Mill Valley"),
-    "94945": (27.0, "Novato"),
-    "94952": (36.0, "Petaluma"),
-    "949": (20.0, "Marin County"),
-    "94501": (10.5, "Alameda"),
-    "94577": (16.5, "San Leandro"),
-    "94541": (22.0, "Hayward"),
-    "94544": (23.0, "Hayward"),
-    "94545": (22.5, "Hayward"),
-    "94536": (30.5, "Fremont"),
-    "94538": (32.0, "Fremont"),
-    "94539": (33.0, "Fremont"),
-    "94560": (31.0, "Newark"),
-    "94596": (23.0, "Walnut Creek"),
-    "94597": (23.5, "Walnut Creek"),
-    "94598": (24.0, "Walnut Creek"),
-    "94520": (27.0, "Concord"),
-    "94523": (25.5, "Pleasant Hill"),
-    "94568": (30.0, "Dublin"),
-    "94566": (33.0, "Pleasanton"),
-    "94588": (32.5, "Pleasanton"),
-    "94550": (39.0, "Livermore"),
-    "94551": (39.5, "Livermore"),
-    "94533": (42.0, "Fairfield"),
-    "94534": (41.0, "Fairfield"),
-    "94558": (44.0, "Napa"),
-    "94589": (28.0, "Vallejo"),
-    "94591": (28.5, "Vallejo"),
-    "94509": (41.0, "Antioch"),
-    "945": (25.0, "East Bay"),
-    "95014": (39.5, "Cupertino"),
-    "95035": (38.0, "Milpitas"),
-    "95050": (41.5, "Santa Clara"),
-    "95051": (41.0, "Santa Clara"),
-    "95054": (40.0, "Santa Clara"),
-    "95008": (45.0, "Campbell"),
-    "95030": (47.0, "Los Gatos"),
-    "95032": (46.5, "Los Gatos"),
-    "95060": (59.0, "Santa Cruz"),
-    "95020": (68.0, "Gilroy"),
-    "950": (42.0, "South Bay"),
-    "951": (45.0, "San Jose"),
-    "954": (52.0, "Santa Rosa"),
-    "952": (68.0, "Stockton"),
-    "953": (64.0, "Tracy / Modesto"),
-    "956": (78.0, "Vacaville / Davis"),
-    "957": (85.0, "Roseville"),
-    "958": (82.0, "Sacramento"),
+    z: (3.0 if z in ("941", "94103") else 25.0, v[2])
+    for z, v in BAY_AREA_ZIP_COORDS.items()
 }
 
 
 class BayAreaGeoLookup:
-    """Zero-dependency geospatial distance and city resolver for Bay Area ZIP codes."""
+    """
+    Zero-dependency geospatial distance and city resolver for Bay Area ZIP codes.
+    Dynamically computes road-adjusted great-circle distances relative to the configured
+    origin ZIP code (settings.search_zip_code).
+    """
 
     @classmethod
-    def resolve_zip(cls, zip_code: Optional[str]) -> Tuple[Optional[float], Optional[str]]:
+    def _get_coord(cls, zip_code_str: str) -> Optional[Tuple[float, float, str]]:
+        clean_zip = str(zip_code_str).strip()[:5]
+        if clean_zip in BAY_AREA_ZIP_COORDS:
+            return BAY_AREA_ZIP_COORDS[clean_zip]
+        prefix3 = clean_zip[:3]
+        if prefix3 in BAY_AREA_ZIP_COORDS:
+            return BAY_AREA_ZIP_COORDS[prefix3]
+        return None
+
+    @classmethod
+    def resolve_zip(
+        cls,
+        zip_code: Optional[str],
+        origin_zip: Optional[str] = None,
+    ) -> Tuple[Optional[float], Optional[str]]:
         if not zip_code:
             return None, None
         clean_zip = str(zip_code).strip()[:5]
         if not clean_zip.isdigit():
             return None, None
 
-        # Exact 5-digit match
-        if clean_zip in BAY_AREA_ZIP_MAP:
-            return BAY_AREA_ZIP_MAP[clean_zip]
+        # Resolve destination
+        dest_data = cls._get_coord(clean_zip)
+        if not dest_data:
+            if not clean_zip.startswith(("94", "95")):
+                return 150.0, "Out of Region"
+            return 55.0, "Greater Bay Area"
 
-        # 3-digit prefix match
-        prefix3 = clean_zip[:3]
-        if prefix3 in BAY_AREA_ZIP_MAP:
-            return BAY_AREA_ZIP_MAP[prefix3]
+        dest_lat, dest_lon, city = dest_data
 
-        # Outside Northern California (e.g., SoCal 90xxx-93xxx or out-of-state)
-        if not clean_zip.startswith(("94", "95")):
-            return 150.0, "Out of Region"
+        # Resolve origin
+        from src.config.settings import settings
+        target_origin = str(origin_zip or settings.search_zip_code or "94103").strip()[:5]
+        orig_data = cls._get_coord(target_origin)
+        if not orig_data:
+            orig_lat, orig_lon = 37.7726, -122.4111  # fallback to SF
+        else:
+            orig_lat, orig_lon, _ = orig_data
 
-        return 55.0, "Greater Bay Area"
+        # If both are in the exact same zip
+        if clean_zip == target_origin:
+            return 2.5, city
+
+        # Great-circle Haversine formula with 1.15 road tortuosity factor
+        import math
+        R = 3958.8  # Earth radius in miles
+        dlat = math.radians(dest_lat - orig_lat)
+        dlon = math.radians(dest_lon - orig_lon)
+        a = (
+            math.sin(dlat / 2.0) ** 2
+            + math.cos(math.radians(orig_lat))
+            * math.cos(math.radians(dest_lat))
+            * math.sin(dlon / 2.0) ** 2
+        )
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        road_distance = max(2.5, round(R * c * 1.15, 1))
+
+        return road_distance, city
 
 
 class DealScorer:
@@ -372,13 +456,18 @@ class DealScorer:
         breakdown["leverage_score"] = round(leverage_score, 1)
 
         # 4. Proximity Score (Weight: 10%)
-        dist = listing.distance_miles
-        if dist is None:
-            seller_zip = listing.raw_data.get("seller_zip")
-            if not seller_zip and isinstance(listing.raw_data.get("seller"), dict):
-                seller_zip = listing.raw_data["seller"].get("zip")
+        dist = None
+        seller_zip = listing.raw_data.get("seller_zip")
+        if not seller_zip and isinstance(listing.raw_data.get("seller"), dict):
+            seller_zip = listing.raw_data["seller"].get("zip")
+
+        if seller_zip:
             est_dist, _ = BayAreaGeoLookup.resolve_zip(seller_zip)
-            dist = est_dist if est_dist is not None else 30.0
+            if est_dist is not None:
+                dist = est_dist
+
+        if dist is None:
+            dist = listing.distance_miles if listing.distance_miles is not None else 30.0
 
         if dist <= 20.0:
             proximity_score = 100.0

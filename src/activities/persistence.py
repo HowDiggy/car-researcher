@@ -82,10 +82,10 @@ async def persist_listings_and_scores_activity(scored_deals: List[Dict[str, Any]
                     existing_listing.last_seen = now_utc
                     existing_listing.is_active = True
 
-                    # Backfill enriched metadata if previously missing
-                    if listing_data.get("distance_miles") is not None and existing_listing.distance_miles is None:
+                    # Update enriched metadata
+                    if listing_data.get("distance_miles") is not None:
                         existing_listing.distance_miles = float(listing_data["distance_miles"])
-                    if listing_data.get("location_city") and not existing_listing.location_city:
+                    if listing_data.get("location_city"):
                         existing_listing.location_city = listing_data["location_city"]
                     if listing_data.get("seller_name") and not existing_listing.seller_name:
                         existing_listing.seller_name = listing_data["seller_name"]

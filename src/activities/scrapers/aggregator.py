@@ -126,6 +126,18 @@ class MarketplaceAggregator:
 
         for l in listings:
             # 1. Geospatial Constraint: Drop if distance exceeds radius
+            if l.distance_miles is None:
+                seller_zip = l.raw_data.get("seller_zip")
+                if not seller_zip and isinstance(l.raw_data.get("seller"), dict):
+                    seller_zip = l.raw_data["seller"].get("zip")
+                if seller_zip:
+                    from src.activities.scoring import BayAreaGeoLookup
+                    est_d, est_c = BayAreaGeoLookup.resolve_zip(seller_zip)
+                    if est_d is not None:
+                        l.distance_miles = est_d
+                    if est_c and not l.location_city:
+                        l.location_city = est_c
+
             if radius_miles and l.distance_miles is not None:
                 if l.distance_miles > float(radius_miles):
                     continue

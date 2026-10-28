@@ -181,6 +181,19 @@ class TestCarResearcherDomain(unittest.TestCase):
         self.assertEqual(city_la, "Out of Region")
         self.assertGreater(dist_la, 100.0)
 
+        # Dynamic origin tests (e.g. Santa Clara 95050)
+        dist_sc_sc, city_sc = BayAreaGeoLookup.resolve_zip("95050", origin_zip="95050")
+        self.assertEqual(city_sc, "Santa Clara")
+        self.assertLessEqual(dist_sc_sc, 5.0)
+
+        dist_sf_from_sc, city_sf_sc = BayAreaGeoLookup.resolve_zip("94103", origin_zip="95050")
+        self.assertEqual(city_sf_sc, "San Francisco")
+        self.assertGreater(dist_sf_from_sc, 35.0)
+
+        dist_sj_from_sc, city_sj_sc = BayAreaGeoLookup.resolve_zip("95110", origin_zip="95050")
+        self.assertEqual(city_sj_sc, "San Jose")
+        self.assertLessEqual(dist_sj_from_sc, 10.0)
+
 
 if __name__ == "__main__":
     unittest.main()

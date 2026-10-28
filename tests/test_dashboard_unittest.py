@@ -213,6 +213,31 @@ class TestDashboardUnit(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["count"], 3)
         self.assertEqual(payload["kpis"]["excellent_count"], 2)
 
+    def test_normalize_record_dynamic_distance(self):
+        row = {
+            "title": "2023 Mercedes-Benz EQS 450+",
+            "price": 39988,
+            "raw_data": {"seller_zip": "95050", "make": "Mercedes-Benz", "model": "EQS", "year": 2023},
+            "distance_miles": 41.5,
+            "deal_score": 80.0,
+            "score_breakdown": {"price_score": 90.0, "history_score": 100.0, "leverage_score": 60.0, "proximity_score": 70.0},
+        }
+        from src.config.settings import settings
+        orig_zip = settings.search_zip_code
+        try:
+            settings.search_zip_code = "95050"
+            normalized = DashboardRepository._normalize_record(row)
+            self.assertEqual(normalized["distance_miles"], 2.5)
+            self.assertEqual(normalized["location_city"], "Santa Clara")
+            self.assertEqual(normalized["score_breakdown"]["proximity_score"], 100.0)
+
+            settings.search_zip_code = "94103"
+            normalized_sf = DashboardRepository._normalize_record(row)
+            self.assertGreater(normalized_sf["distance_miles"], 35.0)
+            self.assertEqual(normalized_sf["score_breakdown"]["proximity_score"], 70.0)
+        finally:
+            settings.search_zip_code = orig_zip
+
 
 if __name__ == "__main__":
     unittest.main()

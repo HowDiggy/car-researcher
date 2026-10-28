@@ -17,6 +17,7 @@ except ImportError:
 from src.config.settings import settings
 from src.activities.gov_apis import GovAPIClient
 from src.activities.notifications import NotificationService
+from src.activities.scoring import BayAreaGeoLookup
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +158,34 @@ class DashboardRepository:
 
         pct_savings = round((price_delta / market_value) * 100, 1) if market_value > 0 else 0.0
 
+        # Dynamically compute distance and city relative to settings.search_zip_code if seller_zip is available
+        seller_zip = raw.get("seller_zip")
+        if not seller_zip and isinstance(raw.get("seller"), dict):
+            seller_zip = raw["seller"].get("zip")
+
+        dyn_dist, dyn_city = BayAreaGeoLookup.resolve_zip(seller_zip) if seller_zip else (None, None)
+        if dyn_dist is not None:
+            dist = dyn_dist
+            if dist <= 20.0:
+                prox_score = 100.0
+            elif dist <= 40.0:
+                prox_score = 85.0
+            elif dist <= 60.0:
+                prox_score = 70.0
+            else:
+                prox_score = max(20.0, 70.0 - (dist - 60.0))
+
+            if breakdown and "price_score" in breakdown:
+                price_s = float(breakdown.get("price_score", 70.0))
+                hist_s = float(breakdown.get("history_score", 100.0))
+                lev_s = float(breakdown.get("leverage_score", 65.0))
+                deal_score = round(0.50 * price_s + 0.25 * hist_s + 0.15 * lev_s + 0.10 * prox_score, 1)
+        else:
+            dist = float(row["distance_miles"]) if row.get("distance_miles") is not None else None
+            prox_score = float(breakdown.get("proximity_score", 85.0))
+
+        city = row.get("location_city") or dyn_city or "Bay Area"
+
         return {
             "id": str(row.get("id") or row.get("platform_id") or ""),
             "vin": row.get("vin") or "N/A",
@@ -172,8 +201,8 @@ class DashboardRepository:
             "mileage": int(row.get("mileage") or 0),
             "exterior_color": row.get("exterior_color") or raw.get("exteriorColor") or "Unknown",
             "seller_name": row.get("seller_name") or "Bay Area Dealer",
-            "location_city": row.get("location_city") or "Bay Area",
-            "distance_miles": float(row["distance_miles"]) if row.get("distance_miles") is not None else None,
+            "location_city": city,
+            "distance_miles": dist,
             "title_status": (row.get("title_status") or "clean").upper(),
             "accident_count": int(row.get("accident_count") or 0),
             "owner_count": row.get("owner_count"),
@@ -187,7 +216,7 @@ class DashboardRepository:
                 "price_score": float(breakdown.get("price_score", 75.0)),
                 "history_score": float(breakdown.get("history_score", 100.0)),
                 "leverage_score": float(breakdown.get("leverage_score", 65.0)),
-                "proximity_score": float(breakdown.get("proximity_score", 85.0)),
+                "proximity_score": prox_score,
             },
             "price_change": int(row.get("price_change") or 0),
             "days_on_market": int(row.get("days_on_market") or raw.get("days_on_market") or 1),
