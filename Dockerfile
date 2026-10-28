@@ -1,7 +1,7 @@
 # -------------------------------------------------------------
 # Stage 1: Build virtual environment with Poetry
 # -------------------------------------------------------------
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.14-slim AS builder
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -36,7 +36,7 @@ RUN poetry install --only main
 # -------------------------------------------------------------
 # Stage 2: Hardened, non-root runtime image
 # -------------------------------------------------------------
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.14-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
