@@ -138,9 +138,9 @@ class DashboardApp:
         clean_path = path.rstrip("/") or "/"
 
         # 1. Main Dashboard HTML Page
-        if method == "GET" and clean_path == "/":
+        if method in ("GET", "HEAD") and clean_path == "/":
             deals, kpis, filters = await self._get_filtered_state(q_params)
-            html_body = render_full_dashboard_page(deals, kpis, filters)
+            html_body = render_full_dashboard_page(deals, kpis, filters) if method == "GET" else ""
             return 200, {"Content-Type": "text/html; charset=utf-8"}, html_body.encode("utf-8")
 
         # 2. HTMX Partial: Filtered Deals Grid / Table
