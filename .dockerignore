@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Environment & Secrets (NEVER bake into image)
+.env*
+!.env.example
+
+# Virtual environments
+.venv
+venv
+env
+
+# Python bytecode & cache
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache
+.coverage
+htmlcov
+.ruff_cache
+
+# Documentation & local development
+docs/
+docker/
+docker-compose*.yml
+AGENTS.md
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs & temp files
+*.log
+logs/
+tmp/
+scratch/
