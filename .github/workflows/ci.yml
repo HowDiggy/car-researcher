@@ -50,9 +50,13 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
+      image_tag: ${{ steps.tag.outputs.tag }}
       image_digest: ${{ steps.build-push.outputs.digest }}
     steps:
+      - name: Determine immutable image tag
+        id: tag
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
       - name: Checkout code
         uses: actions/checkout@v7
 

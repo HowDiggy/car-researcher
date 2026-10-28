@@ -170,3 +170,25 @@ OK
 ```
 
 All 24 tests must pass with zero external dependencies and zero network access.
+
+---
+
+## 6. Deployment & CI/CD Protocol
+
+This codebase is deployed continuously to the bare-metal ThinkStation P620 K3s homelab cluster (`mainframe` @ `192.168.13.100`) using GitOps managed by Argo CD.
+
+### CI/CD Pipeline
+- **Continuous Integration (`.github/workflows/ci.yml`)**:
+  - Triggers on PRs and pushes to `main`.
+  - Runs Ruff lint checks, Poetry dependency validation, and the 24 zero-dependency unit tests.
+  - Builds a multi-stage non-root container on `python:3.15-slim` (Debian 13 Trixie) with pre-installed Playwright Chromium (`linux/amd64`).
+  - Publishes immutable tags `sha-<7>` and `:latest` to GitHub Container Registry (`ghcr.io/howdiggy/car-researcher`) with SBOM and Sigstore provenance attestations.
+  - Runs Trivy vulnerability scanning.
+  - **Automated GitOps Promotion**: Commits the new immutable `sha-<7>` tag and cryptographic digest directly to `HowDiggy/k8s-gitops` (`apps/base/car-researcher/kustomization.yaml`) using a scoped deploy key.
+
+### Production Topology & Endpoints
+- **Web Dashboard**: `https://cars.paulojauregui.com` (Tailwind + HTMX on port 8000, Cilium Gateway API L7 Envoy proxy).
+- **Temporal Web UI**: `https://temporal.paulojauregui.com` (Namespace: `default`, Port 8080).
+- **Database Engine**: CloudNativePG PostgreSQL 18 (`researcher-db`) with TimescaleDB-OSS 2.31.0 and pgvector 0.8.7 mounted via OCI ImageVolumes. Hypertables auto-manage `price_snapshots`.
+- **Surveillance Cron**: Temporal schedule `daily-car-research-surveillance` executes every 24 hours (registered via Argo CD PostSync hook).
+
